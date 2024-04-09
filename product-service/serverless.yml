@@ -1,0 +1,69 @@
+service: aws-seeder
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+
+# Define environment variables for the DynamoDB tables
+custom:
+  tableNameProducts: Products
+  tableNameStocks: Stocks
+
+functions:
+  getProductsList:
+    handler: src/getProductsList.handler
+    environment:
+      TABLE_NAME_PRODUCTS: ${self:custom.tableNameProducts}
+      TABLE_NAME_STOCKS: ${self:custom.tableNameStocks}
+    events:
+      - http:
+          path: /products
+          method: get
+
+  getProductsById:
+    handler: src/getProductsById.handler
+    environment:
+      TABLE_NAME_PRODUCTS: ${self:custom.tableNameProducts}
+      TABLE_NAME_STOCKS: ${self:custom.tableNameStocks}
+    events:
+      - http:
+          path: /products/{productId}
+          method: get
+
+  createProduct:
+    handler: src/getProductsById.handler
+    events:
+      - http:
+          path: /products
+          method: post
+
+resources:
+  Resources:
+    ProductsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.tableNameProducts}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+
+    StocksTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.tableNameStocks}
+        AttributeDefinitions:
+          - AttributeName: product_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: product_id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
