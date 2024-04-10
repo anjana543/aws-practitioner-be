@@ -7,27 +7,36 @@ const TABLE_NAME_PRODUCTS = process.env.TABLE_NAME_PRODUCTS;
 const TABLE_NAME_STOCKS = process.env.TABLE_NAME_STOCKS;
 
 exports.handler = async (event) => {
-    const { title, description, price, count } = JSON.parse(event.body);
-
     try {
         console.log('Incoming request:', JSON.stringify(event));
 
-        // Validate product data
-        if (!title || !description || !price || isNaN(price) || price <= 0 || isNaN(count) || count < 0) {
+        const requestBody = JSON.parse(event.body);
+        const { title, description, price } = requestBody;
+
+        // Check if all required product data is provided
+        if (!title || !description || !price) {
             return {
                 statusCode: 400,
                 headers: {
-                    'Access-Control-Allow-Origin': '*', 
+                    'Access-Control-Allow-Origin': '*',
                     'Access-Control-Allow-Credentials': true,
                 },
-                body: JSON.stringify({ message: 'Invalid product data' }),
+                body: JSON.stringify({ message: 'Missing required product data' }),
+            };
+        }
+
+        if (typeof title !== 'string' || typeof description !== 'string' || isNaN(price) || price <= 0) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ message: 'Invalid product data (title, description, price)' }),
             };
         }
 
         const productId = uuid.v4();
+        const stockId = uuid.v4();
 
-        // Begin a transaction
-        const transactionParams = {
+        // Prepare the transaction request
+        const transactParams = {
             TransactItems: [
                 {
                     Put: {
@@ -36,54 +45,49 @@ exports.handler = async (event) => {
                             id: productId,
                             title: title,
                             description: description,
-                            price: price
+                            price: price,
                         },
-                        ConditionExpression: 'attribute_not_exists(id)' // Ensure the product ID doesn't already exist
-                    }
+                    },
                 },
                 {
                     Put: {
                         TableName: TABLE_NAME_STOCKS,
                         Item: {
+                            id: stockId,
                             product_id: productId,
-                            count: count
-                        }
-                    }
-                }
-            ]
+                            quantity: 0, 
+                        },
+                        ConditionExpression: 'attribute_not_exists(id)', // Ensure stock item doesn't already exist
+                    },
+                },
+            ],
         };
 
-        await dynamoDB.transactWrite(transactionParams).promise();
+        // Execute the transaction
+        await dynamoDB.transactWrite(transactParams).promise();
 
         return {
             statusCode: 201,
-            headers: {
-                'Access-Control-Allow-Origin': '*', 
-                'Access-Control-Allow-Credentials': true,
-            },
             body: JSON.stringify({ id: productId }),
         };
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error creating product:', error);
+        let errorMessage = 'Internal server error';
 
-        if (error.code === 'TransactionCanceledException' && error.cancellationReasons) {
-            return {
-                statusCode: 400,
-                headers: {
-                    'Access-Control-Allow-Origin': '*', 
-                    'Access-Control-Allow-Credentials': true,
-                },
-                body: JSON.stringify({ message: 'Transaction failed', error }),
-            };
+        // Provide more specific error messages based on error codes
+        if (error.code === 'ValidationError') {
+            errorMessage = 'Invalid product data. Please check your input.';
+        } else if (error.code === 'ResourceNotFoundException') {
+            errorMessage = 'Table not found. Please verify table names.';
+        } else if (error.code === 'TransactionCanceledException') {
+            errorMessage = 'Transaction failed: ' + JSON.stringify(error.cancellationReasons);
+        } else if (error.requestId) {
+            errorMessage = `Error creating product (requestId: ${error.requestId}).`;
         }
 
         return {
             statusCode: 500,
-            headers: {
-                'Access-Control-Allow-Origin': '*', 
-                'Access-Control-Allow-Credentials': true,
-            },
-            body: JSON.stringify({ message: 'Internal server error' }),
+            body: JSON.stringify({ message: errorMessage }),
         };
     }
 };

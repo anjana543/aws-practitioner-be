@@ -2,8 +2,10 @@ service: aws-seeder
 
 provider:
   name: aws
-  runtime: nodejs20.x
+  runtime: nodejs18.x  # Updated runtime to nodejs18.x
   region: us-east-1
+  deploymentBucket:
+    name: myawsbucketshopanjana
 
 # Define environment variables for the DynamoDB tables
 custom:
@@ -20,6 +22,7 @@ functions:
       - http:
           path: /products
           method: get
+          cors: true
 
   getProductsById:
     handler: src/getProductsById.handler
@@ -30,13 +33,18 @@ functions:
       - http:
           path: /products/{productId}
           method: get
+          cors: true
 
   createProduct:
-    handler: src/getProductsById.handler
+    handler: src/createProduct.handler
+    environment:
+      TABLE_NAME_PRODUCTS: ${self:custom.tableNameProducts}
+      TABLE_NAME_STOCKS: ${self:custom.tableNameStocks}
     events:
       - http:
           path: /products
           method: post
+          cors: true
 
 resources:
   Resources:
