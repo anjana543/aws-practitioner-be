@@ -1,0 +1,20 @@
+{
+  "name": "import-service",
+  "version": "1.0.0",
+  "description": "AWS Lambda functions for import-service",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"No tests specified\" && exit 0",
+    "deploy": "sls deploy"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.1037.0",
+    "csv-parser": "^3.0.0"
+  },
+  "devDependencies": {
+    "serverless": "^3.1.1",
+    "serverless-offline": "^8.0.0"
+  }
+}

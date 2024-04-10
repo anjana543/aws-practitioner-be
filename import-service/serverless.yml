@@ -1,0 +1,41 @@
+service: import-service
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  region: us-east-1
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action: "s3:ListBucket"
+          Resource:
+            - "arn:aws:s3:::myawsbucktforupload"
+        - Effect: Allow
+          Action:
+            - "s3:*"
+          Resource:
+            - "arn:aws:s3:::myawsbucktforupload/*"
+
+functions:
+  importProductsFile:
+    handler: handlers.importProductsFile
+    events:
+      - http:
+          path: import
+          method: get
+          request:
+            parameters:
+              querystrings:
+                name: true
+  importFileParser:
+    handler: handlers.importFileParser
+    events:
+      - s3:
+          bucket: myawsbucktforupload
+          event: s3:ObjectCreated:* # * : all types allowed: put and post
+          rules:
+            - prefix: uploaded/
+          existing: true
