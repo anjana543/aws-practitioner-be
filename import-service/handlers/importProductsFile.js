@@ -12,23 +12,18 @@ export default async function getSignedUrlForPut(fileName) {
     ContentType: 'text/csv'
   };
 
-  return new Promise((resolve, reject) => {
-    s3.getSignedUrlPromise('putObject', params, (error, url) => {
-      console.log('url ', url);
-
-      if (url) {
-        resolve({
-          statusCode: 200,
-          body: JSON.stringify(url)
-        });
-      } else {
-        console.error('Error');
-        console.error(error);
-        reject({
-          statusCode: 500,
-          body: JSON.stringify(error)
-        });
-      }
-    })
-  })
-};
+  try {
+    const url = await s3.getSignedUrlPromise('putObject', params);
+    console.log('Generated URL: ', url);
+    return {
+      statusCode: 200,
+      body: JSON.stringify(url)
+    };
+  } catch (error) {
+    console.error('Error generating signed URL: ', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: error.message })
+    };
+  }
+}
