@@ -5,6 +5,12 @@ const dynamoDB = new AWS.DynamoDB.DocumentClient();
 const TABLE_NAME_PRODUCTS = process.env.TABLE_NAME_PRODUCTS;
 const TABLE_NAME_STOCKS = process.env.TABLE_NAME_STOCKS;
 
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+};
+
 exports.handler = async (event) => {
     try {
         const { productId } = event.pathParameters;
@@ -28,11 +34,13 @@ exports.handler = async (event) => {
 
         return {
             statusCode: 200,
+            headers: corsHeaders,
             body: JSON.stringify(productWithStock),
         };
     } catch (error) {
         return {
             statusCode: 500,
+            headers: corsHeaders,
             body: JSON.stringify({ message: 'Error fetching product', error }),
         };
     }
