@@ -1,4 +1,4 @@
-service: product-service
+service: aws-seeder
 
 provider:
   name: aws
