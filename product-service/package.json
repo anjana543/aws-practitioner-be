@@ -1,5 +1,14 @@
 {
-  "dependencies": {
-    "aws-sdk": "^2.1595.0"
+  "name": "aws-seeder",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "aws-sdk": "^2.1595.0",
+    "aws-sdk-mock": "^5.9.0",
+    "jest": "^29.7.0",
+    "dotenv": "^16.4.5"
   }
 }

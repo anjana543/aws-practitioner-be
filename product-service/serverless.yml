@@ -63,7 +63,8 @@ functions:
     handler: src/catalogBatchProcess.handler
     environment:
       TABLE_NAME_PRODUCTS: ${self:custom.tableNameProducts}
-      TABLE_NAME_STOCKS: ${self:custom.tableNameStocks}
+      CREATE_PRODUCT_TOPIC_ARN:
+        Ref: createProductTopic
     events:
       - sqs:
           arn:

@@ -1,30 +1,7 @@
 const AWS = require('aws-sdk');
 
 const docClient = new AWS.DynamoDB.DocumentClient();
-const sns = new AWS.SNS();
-
-exports.handler = async (event) => {
-  try {
-    console.log("Processing SQS messages:", event.Records.length);
-
-    for (const record of event.Records) {
-      const productData = JSON.parse(record.body);
-      await createProduct(productData);
-    }
-
-    // Send notification after processing all messages (assuming successful processing)
-    const message = `Successfully created ${event.Records.length} products.`;
-    await sendProductCreationNotification(message);
-
-    return {
-      statusCode: 200,
-      body: 'Successfully processed SQS messages.',
-    };
-  } catch (error) {
-    console.error("Error processing SQS messages:", error);
-    throw error;
-  }
-};
+const sns = new AWS.SNS({ region: 'us-east-1' });
 
 async function createProduct(productData) {
   try {
@@ -53,3 +30,30 @@ async function sendProductCreationNotification(message) {
     throw error;
   }
 }
+
+module.exports = {
+  handler: async (event) => {
+    try {
+      console.log("Processing SQS messages:", event.Records.length);
+
+      for (const record of event.Records) {
+        const productData = JSON.parse(record.body);
+        await createProduct(productData);
+      }
+
+      // Send notification after processing all messages (assuming successful processing)
+      const message = `Successfully created ${event.Records.length} products.`;
+      await sendProductCreationNotification(message);
+
+      return {
+        statusCode: 200,
+        body: 'Successfully processed SQS messages.',
+      };
+    } catch (error) {
+      console.error("Error processing SQS messages:", error);
+      throw error;
+    }
+  },
+  createProduct: createProduct,
+  sendProductCreationNotification: sendProductCreationNotification,
+};
