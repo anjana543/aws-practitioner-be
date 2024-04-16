@@ -6,6 +6,13 @@ const dynamoDB = new AWS.DynamoDB.DocumentClient();
 const TABLE_NAME_PRODUCTS = process.env.TABLE_NAME_PRODUCTS;
 const TABLE_NAME_STOCKS = process.env.TABLE_NAME_STOCKS;
 
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Credentials': true,
+};
+
 exports.handler = async (event) => {
     try {
         console.log('Incoming request:', JSON.stringify(event));
@@ -17,10 +24,7 @@ exports.handler = async (event) => {
         if (!title || !description || !price) {
             return {
                 statusCode: 400,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Credentials': true,
-                },
+                headers: corsHeaders,
                 body: JSON.stringify({ message: 'Missing required product data' }),
             };
         }
@@ -28,6 +32,7 @@ exports.handler = async (event) => {
         if (typeof title !== 'string' || typeof description !== 'string' || isNaN(price) || price <= 0) {
             return {
                 statusCode: 400,
+                headers: corsHeaders,
                 body: JSON.stringify({ message: 'Invalid product data (title, description, price)' }),
             };
         }
@@ -68,6 +73,7 @@ exports.handler = async (event) => {
 
         return {
             statusCode: 201,
+            headers: corsHeaders,
             body: JSON.stringify({ id: productId }),
         };
     } catch (error) {
@@ -87,6 +93,7 @@ exports.handler = async (event) => {
 
         return {
             statusCode: 500,
+            headers: corsHeaders,
             body: JSON.stringify({ message: errorMessage }),
         };
     }
