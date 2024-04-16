@@ -1,16 +1,29 @@
 service: aws-seeder
 
-provider:
-  name: aws
-  runtime: nodejs18.x  # Updated runtime to nodejs18.x
-  region: us-east-1
-  deploymentBucket:
-    name: myawsbucketshopanjana
-
-# Define environment variables for the DynamoDB tables
 custom:
   tableNameProducts: Products
   tableNameStocks: Stocks
+  accountId: 449436809015
+
+provider:
+  name: aws
+  runtime: nodejs18.x 
+  region: us-east-1
+  deploymentBucket:
+    name: myawsbucketshopanjana
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:*"
+        - 'sns:Publish'
+        - 'sqs:ReceiveMessage'
+        - 'sqs:DeleteMessage'
+        - 'sqs:GetQueueAttributes'
+      Resource:
+        - { 'Fn::GetAtt': ['ProductsTable', 'Arn'] }
+        - { 'Fn::GetAtt': ['StocksTable', 'Arn'] }
+        - { 'Fn::GetAtt': ['catalogItemsQueue', 'Arn'] }
+        - { 'Fn::Sub': 'arn:aws:sns:${self:provider.region}:${self:custom.accountId}:createProductTopic' }
 
 functions:
   getProductsList:
@@ -46,6 +59,20 @@ functions:
           method: post
           cors: true
 
+  catalogBatchProcess:
+    handler: src/catalogBatchProcess.handler
+    environment:
+      TABLE_NAME_PRODUCTS: ${self:custom.tableNameProducts}
+      TABLE_NAME_STOCKS: ${self:custom.tableNameStocks}
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - catalogItemsQueue
+              - Arn
+          batchSize: 5
+          
+
 resources:
   Resources:
     ProductsTable:
@@ -61,7 +88,6 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 5
           WriteCapacityUnits: 5
-
     StocksTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -75,3 +101,41 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 5
           WriteCapacityUnits: 5
+    catalogItemsQueue: 
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: catalogItemsQueue
+    createProductTopic:  
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: createProductTopic
+    createProductEmailSubscription: 
+      Type: AWS::SNS::Subscription
+      Properties:
+        Endpoint: anjana_nair@epam.com
+        Protocol: email
+        TopicArn:
+          Ref: createProductTopic
+    createProductExtraEmailSubscription: 
+      Type: AWS::SNS::Subscription
+      Properties:
+        Endpoint: anjana543@gmails.com
+        Protocol: email
+        TopicArn:
+          Ref: createProductTopic
+  Outputs:
+    CatalogItemsQueueUrl:
+      Value:
+        Ref: catalogItemsQueue
+      Export:
+        Name:
+          Fn::Sub: "aws-seeder-dev-CatalogItemsQueueUrl"
+    CatalogItemsQueueArn:
+      Value:
+        Fn::GetAtt:
+            - catalogItemsQueue
+            - Arn
+      Export:
+        Name:
+          Fn::Sub: "aws-seeder-dev-CatalogItemsQueueArn"
+

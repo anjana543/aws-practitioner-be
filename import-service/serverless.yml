@@ -14,19 +14,24 @@ provider:
   runtime: nodejs18.x
   stage: dev
   region: ${env:REGION}
+  SQS_URL:
+      'Fn::ImportValue': 'aws-seeder-dev-CatalogItemsQueueUrl'
 
-  iam:
-    role:
-      statements:
-        - Effect: Allow
-          Action: "s3:ListBucket"
-          Resource:
-            - "arn:aws:s3:::${env:BUCKET}"
-        - Effect: Allow
-          Action:
-            - "s3:*"
-          Resource:
-            - "arn:aws:s3:::${env:BUCKET}/*"
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - 's3:ListBucket'
+        - 's3:GetObject'
+        - 's3:PutObject'
+        - 's3:DeleteObject'
+      Resource:
+        - 'arn:aws:s3:::${env:BUCKET}'
+        - 'arn:aws:s3:::${env:BUCKET}/*'
+    - Effect: 'Allow'
+      Action:
+        - 'sqs:SendMessage'
+      Resource:
+        - 'Fn::ImportValue': 'aws-seeder-dev-CatalogItemsQueueArn'
 
 functions:
   importProductsFile:
@@ -39,6 +44,7 @@ functions:
             parameters:
               querystrings:
                 name: true
+          cors: true
   importFileParser:
     handler: handlers.importFileParser
     events:
@@ -46,5 +52,5 @@ functions:
           bucket: ${env:BUCKET}
           event: s3:ObjectCreated:* # * : all types allowed: put and post
           rules:
-            - prefix: ${env:UPLOAD_PATH}
+            - prefix: uploaded/
           existing: true

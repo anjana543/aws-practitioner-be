@@ -31,6 +31,7 @@ export const importProductsFile = async (event) => {
 export const importFileParser = async (event) => {
   try {
     const result = await fileParser(event);
+    result.headers = defaultHeaders;
     console.log('result: ', result);
     return result;
   } catch (error) {
