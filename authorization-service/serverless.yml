@@ -1,0 +1,23 @@
+service: authorization-service
+frameworkVersion: '3'
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  region: ap-south-1
+  environment:
+    anjana543: ${env:anjana543}
+
+plugins:
+  - serverless-webpack
+
+functions:
+  basicAuthorizer:
+    handler: handlers/basicAuthorizer.handler
+
+custom:
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
