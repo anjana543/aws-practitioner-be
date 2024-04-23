@@ -4,9 +4,9 @@ useDotenv: true
 
 provider:
   name: aws
-  runtime: nodejs16.x
+  runtime: nodejs18.x
   stage: dev
-  region: eu-west-1
+  region: ap-south-1
   environment:
     anjana543: ${env:anjana543}
 
