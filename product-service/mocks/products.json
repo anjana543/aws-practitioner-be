@@ -1,0 +1,65 @@
+[
+	{
+		"id": "023e3d65-12b2-49c0-ab76-59925bdcf8ef",
+		"description": "Short Product Description1",
+		"price": 24,
+		"title": "Samsung Galaxy Watch 4",
+		"image": "https://via.placeholder.com/150"
+	},
+	{
+		"id": "35c182e9-c54c-4cca-828e-af8b10785459",
+		"description": "Short Product Description3",
+		"price": 10,
+		"title": "Lenovo ThinkPad E580",
+		"image": "https://via.placeholder.com/150"
+	},
+	{
+		"id": "290055e8-2220-4050-9747-25c78290b423",
+		"description": "Short Product Description2",
+		"price": 23,
+		"title": "Samsung A52",
+		"image": "https://via.placeholder.com/150"
+	},
+	{
+		"id": "e73bcbb2-18a4-42ac-b718-2643374bdb9f",
+		"description": "Short Product Description7",
+		"price": 15,
+		"title": "EcoFlow Delta 2",
+		"image": "https://via.placeholder.com/150"
+	},
+	{
+		"id": "f421a4d8-5591-49e7-98a8-4d2c7c6922d5",
+		"description": "Short Product Description2",
+		"price": 23,
+		"title": "ECG Forza 8000 Pour over Nero",
+		"image": "https://via.placeholder.com/150"
+	},
+	{
+		"id": "18736512-fb23-4510-9d25-1a25fc30447c",
+		"description": "Short Product Description4",
+		"price": 15,
+		"title": "JBL Clip 4",
+		"image": "https://via.placeholder.com/150"
+	},
+	{
+		"id": "128d6b57-2e1c-490a-bca1-18af2f91ebf7",
+		"description": "Short Product Descriptio1",
+		"price": 23,
+		"title": "Ledvance SMART",
+		"image": "https://via.placeholder.com/150"
+	},
+	{
+		"id": "2b4dd94b-d190-4380-8933-d5f4c1af5ff7",
+		"description": "Short Product Description7",
+		"price": 15,
+		"title": "Baseus Bipow",
+		"image": "https://via.placeholder.com/150"
+	},
+	{
+		"id": "718de008-7c28-4ad4-af62-d22b7c0e3a6b",
+		"description": "Short Product Description7",
+		"price": 15,
+		"title": "TP-Link Tapo L530E",
+		"image": "https://via.placeholder.com/150"
+	}
+]

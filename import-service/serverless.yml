@@ -4,19 +4,25 @@ frameworkVersion: "3"
 
 plugins:
   - serverless-webpack
-  - serverless-auto-swagger
-  - serverless-dotenv-plugin
 
-useDotenv: true
+custom:
+  accountId: 845857259578
+  bucketName: import-to-service-files
 
 provider:
   name: aws
   runtime: nodejs18.x
   stage: dev
-  region: ${env:REGION}
-  SQS_URL:
-      'Fn::ImportValue': 'aws-seeder-dev-CatalogItemsQueueUrl'
-
+  region: ap-south-1
+  environment:
+    UPLOAD_FOLDER: uploaded
+    PARSE_FOLDER: parsed
+    BUCKET: ${self:custom.bucketName}
+    REGION: ${self:provider.region}
+    SQS_URL:
+      'Fn::ImportValue': 'product-service-${self:provider.stage}-CatalogItemsQueueUrl'
+  httpApi:
+    cors: true
   iamRoleStatements:
     - Effect: 'Allow'
       Action:
@@ -25,32 +31,30 @@ provider:
         - 's3:PutObject'
         - 's3:DeleteObject'
       Resource:
-        - 'arn:aws:s3:::${env:BUCKET}'
-        - 'arn:aws:s3:::${env:BUCKET}/*'
+        - 'arn:aws:s3:::${self:custom.bucketName}'
+        - 'arn:aws:s3:::${self:custom.bucketName}/*'
     - Effect: 'Allow'
       Action:
         - 'sqs:SendMessage'
       Resource:
-        - 'Fn::ImportValue': 'aws-seeder-dev-CatalogItemsQueueArn'
+        - 'Fn::ImportValue': 'product-service-${self:provider.stage}-CatalogItemsQueueArn'
 
 functions:
   importProductsFile:
-    handler: handlers.importProductsFile
+    handler: handler.importProductsFile
+    description: |
+      This function requires a query string parameter "name" specifying the filename.
+      Example usage: /import?name=myFile.csv
     events:
-      - http:
-          path: import
+      - httpApi:
+          path: /import
           method: get
-          request:
-            parameters:
-              querystrings:
-                name: true
-          cors: true
   importFileParser:
-    handler: handlers.importFileParser
+    handler: handler.importFileParser
     events:
       - s3:
-          bucket: ${env:BUCKET}
-          event: s3:ObjectCreated:* # * : all types allowed: put and post
+          bucket: ${self:custom.bucketName}
+          event: s3:ObjectCreated:*
           rules:
             - prefix: uploaded/
-          existing: true
+            - suffix: .csv
