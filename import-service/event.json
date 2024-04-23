@@ -1,0 +1,17 @@
+{
+	"Records": [
+		{
+			"s3": {
+				"bucket": {
+					"name": "import-service-files"
+				},
+				"object": {
+					"key": "uploaded/products.csv"
+				}
+			}
+		}
+	],
+	"queryStringParameters": {
+		"name": "products.csv"
+	}
+}

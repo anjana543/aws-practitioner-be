@@ -1,0 +1,60 @@
+service: import-service
+
+frameworkVersion: "3"
+
+plugins:
+  - serverless-webpack
+
+custom:
+  accountId: 845857259578
+  bucketName: import-to-service-files
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  region: ap-south-1
+  environment:
+    UPLOAD_FOLDER: uploaded
+    PARSE_FOLDER: parsed
+    BUCKET: ${self:custom.bucketName}
+    REGION: ${self:provider.region}
+    SQS_URL:
+      'Fn::ImportValue': 'product-service-${self:provider.stage}-CatalogItemsQueueUrl'
+  httpApi:
+    cors: true
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - 's3:ListBucket'
+        - 's3:GetObject'
+        - 's3:PutObject'
+        - 's3:DeleteObject'
+      Resource:
+        - 'arn:aws:s3:::${self:custom.bucketName}'
+        - 'arn:aws:s3:::${self:custom.bucketName}/*'
+    - Effect: 'Allow'
+      Action:
+        - 'sqs:SendMessage'
+      Resource:
+        - 'Fn::ImportValue': 'product-service-${self:provider.stage}-CatalogItemsQueueArn'
+
+functions:
+  importProductsFile:
+    handler: handler.importProductsFile
+    description: |
+      This function requires a query string parameter "name" specifying the filename.
+      Example usage: /import?name=myFile.csv
+    events:
+      - httpApi:
+          path: /import
+          method: get
+  importFileParser:
+    handler: handler.importFileParser
+    events:
+      - s3:
+          bucket: ${self:custom.bucketName}
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: uploaded/
+            - suffix: .csv

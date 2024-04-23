@@ -5,7 +5,4 @@ jspm_packages
 # Serverless directories
 .serverless
 
-# IDE files
-functions/loadProducts.js
-
 .webpack

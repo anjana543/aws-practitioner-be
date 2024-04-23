@@ -1,57 +1,89 @@
-service: aws-seeder
+service: product-service
+
+frameworkVersion: "3"
+
+plugins:
+  - serverless-webpack
+
+custom:
+  accountId: 845857259578
 
 provider:
   name: aws
-  runtime: nodejs18.x  # Updated runtime to nodejs18.x
-  region: us-east-1
-  deploymentBucket:
-    name: myawsbucketshopanjana
-
-# Define environment variables for the DynamoDB tables
-custom:
-  tableNameProducts: Products
-  tableNameStocks: Stocks
+  runtime: nodejs18.x
+  stage: dev
+  region: ap-south-1
+  environment:
+    PRODUCTS_TABLE_NAME: products
+    STOCKS_TABLE_NAME: stocks
+    EMAIL: anjana_nair@epam.com
+    EMAIL_EXTRA: anjana543@gmail.com
+  httpApi:
+    cors: true
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:*"
+        - 'sns:Publish'
+        - 'sqs:ReceiveMessage'
+        - 'sqs:DeleteMessage'
+        - 'sqs:GetQueueAttributes'
+      Resource:
+        - { 'Fn::GetAtt': ['ProductsTable', 'Arn'] }
+        - { 'Fn::GetAtt': ['StocksTable', 'Arn'] }
+        - { 'Fn::GetAtt': ['catalogItemsQueue', 'Arn'] }
+        - { 'Fn::Sub': 'arn:aws:sns:${self:provider.region}:${self:custom.accountId}:createProductTopic' }
 
 functions:
   getProductsList:
-    handler: src/getProductsList.handler
-    environment:
-      TABLE_NAME_PRODUCTS: ${self:custom.tableNameProducts}
-      TABLE_NAME_STOCKS: ${self:custom.tableNameStocks}
+    handler: handler.getProductsList
     events:
-      - http:
+      - httpApi:
           path: /products
           method: get
-          cors: true
-
-  getProductsById:
-    handler: src/getProductsById.handler
-    environment:
-      TABLE_NAME_PRODUCTS: ${self:custom.tableNameProducts}
-      TABLE_NAME_STOCKS: ${self:custom.tableNameStocks}
+  getProductById:
+    handler: handler.getProductById
     events:
-      - http:
-          path: /products/{productId}
+      - httpApi:
+          path: /products/{id}
           method: get
-          cors: true
-
   createProduct:
-    handler: src/createProduct.handler
-    environment:
-      TABLE_NAME_PRODUCTS: ${self:custom.tableNameProducts}
-      TABLE_NAME_STOCKS: ${self:custom.tableNameStocks}
+    handler: handler.createProduct
     events:
-      - http:
-          path: /products
+      - httpApi:
+          path: /create
           method: post
-          cors: true
+  deleteProduct:
+    handler: handler.deleteProduct
+    events:
+      - httpApi:
+          path: /products/{id}
+          method: delete
+  loadData:
+    handler: handler.loadData
+    events:
+      - httpApi:
+          path: /products/load
+          method: post
+  catalogBatchProcess:
+    handler: handler.catalogBatchProcess
+    environment:
+      SNS_TOPIC_ARN:
+        Ref: createProductTopic
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - catalogItemsQueue
+              - Arn
+          batchSize: 5
 
 resources:
   Resources:
     ProductsTable:
-      Type: AWS::DynamoDB::Table
+      Type: 'AWS::DynamoDB::Table'
       Properties:
-        TableName: ${self:custom.tableNameProducts}
+        TableName: ${self:provider.environment.PRODUCTS_TABLE_NAME}
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
@@ -61,11 +93,10 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 5
           WriteCapacityUnits: 5
-
     StocksTable:
-      Type: AWS::DynamoDB::Table
+      Type: 'AWS::DynamoDB::Table'
       Properties:
-        TableName: ${self:custom.tableNameStocks}
+        TableName: ${self:provider.environment.STOCKS_TABLE_NAME}
         AttributeDefinitions:
           - AttributeName: product_id
             AttributeType: S
@@ -75,3 +106,45 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 5
           WriteCapacityUnits: 5
+    catalogItemsQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: catalogItemsQueue
+    createProductTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: createProductTopic
+    createProductTopicSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Endpoint: ${self:provider.environment.EMAIL}
+        Protocol: email
+        TopicArn:
+          Ref: createProductTopic
+    createProductTopicSubscriptionExtra:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Endpoint: ${self:provider.environment.EMAIL_EXTRA}
+        Protocol: email
+        TopicArn:
+          Ref: createProductTopic
+        FilterPolicy:
+          price:
+            - 10
+  Outputs:
+    CatalogItemsQueueUrl:
+      Description: "URL of the catalog items SQS queue"
+      Value:
+        Ref: catalogItemsQueue
+      Export:
+        Name:
+          Fn::Sub: "${AWS::StackName}-CatalogItemsQueueUrl"
+    CatalogItemsQueueArn:
+      Description: "ARN of the catalog items SQS queue"
+      Value:
+        Fn::GetAtt:
+            - catalogItemsQueue
+            - Arn
+      Export:
+        Name:
+          Fn::Sub: "${AWS::StackName}-CatalogItemsQueueArn"
